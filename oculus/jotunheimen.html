@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<title>three.js - Jotunheimen</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+<style>
+    body { margin: 0; overflow: hidden; }
+</style>
+</head>
+<body>
+<div id="webgl"></div>
+<script src="../lib/three.js"></script>
+<script src="../lib/oculus/OculusRiftEffect.js"></script>
+<script src="../lib/oculus/OculusControls.js"></script> 
+<script src="../lib/oculus/FirstPersonControls.js"></script>  
+<script>
+    var width  = window.innerWidth,
+        height = window.innerHeight;
+    var clock = new THREE.Clock();
+    
+    var scene = new THREE.Scene();
+
+    var axes = new THREE.AxisHelper(200);
+    scene.add(axes);
+
+    var camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 20000 );
+    camera.up = new THREE.Vector3( 0, 0, 1 );
+    camera.position.z = 50;
+
+    var renderer = new THREE.WebGLRenderer();
+    renderer.setSize(width, height);
+    renderer.setClearColor(new THREE.Color(0xbfd1e5));
+
+    effect = new THREE.OculusRiftEffect( renderer, {worldScale: 100} );
+    effect.setSize( window.innerWidth, window.innerHeight );
+
+    loadTerrain('../assets/jotunheimen512.bin', function (data){
+
+        var geometry = new THREE.PlaneGeometry(200, 200, 511, 511);
+
+        for (var i = 0, l = geometry.vertices.length; i < l; i++) {
+            geometry.vertices[i].z = data[i] / 65535 * 20;
+        }
+
+        var material = new THREE.MeshPhongMaterial({
+            map: THREE.ImageUtils.loadTexture('../assets/jotunheimen-texture.jpg')
+        });
+
+        var plane = new THREE.Mesh(geometry, material);
+        scene.add(plane);
+
+        var light = new THREE.AmbientLight(0xeeeeee);
+        scene.add(light);
+
+        var controls = new THREE.FirstPersonControls( camera );
+
+        controls.movementSpeed = 0.1;
+        controls.lookSpeed = 0.00125;
+        controls.lookVertical = true;
+
+        oculuscontrol = new THREE.OculusControls( camera ); 
+
+        document.getElementById('webgl').appendChild(renderer.domElement);
+
+        oculuscontrol.connect(); // Requires https://github.com/possan/oculus-rest/
+
+        animate();
+
+        function render() {
+            controls.update();    
+            requestAnimationFrame(render);
+            effect.render(scene, camera);
+        }
+
+        function animate() {
+            camera.updateProjectionMatrix();
+
+            requestAnimationFrame( animate );
+
+            var t = clock.getElapsedTime();
+
+            controls.update( t );
+            oculuscontrol.update( t );
+            
+            effect.render( scene, camera );
+        }
+    });
+
+
+    //https://github.com/mrdoob/three.js/blob/master/src/loaders/XHRLoader.js
+
+    // https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/Sending_and_Receiving_Binary_Data
+    function loadTerrain(file, callback) {
+        var req = new XMLHttpRequest();
+        req.responseType = 'arraybuffer';
+        req.open('GET', file, true);
+        req.onload = function(evt) {
+            if (req.response) {
+                callback(new Uint16Array(req.response));
+            }
+        };
+        req.send(null);
+    }
+
+</script>
+</body>
+</html>
