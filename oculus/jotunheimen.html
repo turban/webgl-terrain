@@ -17,7 +17,7 @@
 <script src="../lib/FirstPersonControls.js"></script>  
 <script>
     var width  = window.innerWidth,
-        height = window.innerHeight,
+        height = window.innerHeight;
     
     var scene = new THREE.Scene();
     scene.add(new THREE.AmbientLight(0xeeeeee));
@@ -67,7 +67,7 @@
 
     function render() {
         camera.updateProjectionMatrix();
-        requestAnimationFrame(animate);
+        requestAnimationFrame(render);
 
         var t = clock.getElapsedTime();
         controls.update(t);
