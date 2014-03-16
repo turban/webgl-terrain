@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<title>three.js - Jotunheimen</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+<style>
+    body { margin: 0; overflow: hidden; }
+</style>
+</head>
+<body>
+<div id="webgl"></div>
+<script src="../lib/three.js"></script>
+<script src="../lib/TerrainLoader.js"></script> 
+<script src="../lib/OculusRiftEffect.js"></script>
+<script src="../lib/OculusControls.js"></script> 
+<script src="../lib/FirstPersonControls.js"></script>  
+<script>
+    var width  = window.innerWidth,
+        height = window.innerHeight;
+    
+    var scene = new THREE.Scene();
+    scene.add(new THREE.AmbientLight(0xeeeeee));
+
+    var clock = new THREE.Clock();
+
+    var camera = new THREE.PerspectiveCamera(60, width / height, 1, 20000);
+    camera.up = new THREE.Vector3(0, 0, 1);
+    camera.position.z = 50;
+
+    var renderer = new THREE.WebGLRenderer();
+    renderer.setSize(width, height);
+    renderer.setClearColor(new THREE.Color(0xbfd1e5));
+
+    var effect = new THREE.OculusRiftEffect(renderer, {worldScale: 100});
+    effect.setSize(width, height);
+
+    var terrainLoader = new THREE.TerrainLoader();
+    terrainLoader.load('../assets/jotunheimen512.bin', function(data) {
+
+        var geometry = new THREE.PlaneGeometry(200, 200, 511, 511);
+
+        for (var i = 0, l = geometry.vertices.length; i < l; i++) {
+            geometry.vertices[i].z = data[i] / 65535 * 20;
+        }
+
+        var material = new THREE.MeshPhongMaterial({
+            map: THREE.ImageUtils.loadTexture('../assets/jotunheimen-texture.jpg')
+        });
+
+        var plane = new THREE.Mesh(geometry, material);
+        scene.add(plane);
+    });
+
+    var controls = new THREE.FirstPersonControls(camera);
+    controls.movementSpeed = 0.1;
+    controls.lookSpeed = 0.00125;
+    controls.lookVertical = true;
+
+    var oculuscontrol = new THREE.OculusControls(camera); 
+
+    document.getElementById('webgl').appendChild(renderer.domElement);
+
+    oculuscontrol.connect(); // Requires https://github.com/possan/oculus-rest/
+
+    render();
+
+    function render() {
+        camera.updateProjectionMatrix();
+        requestAnimationFrame(render);
+
+        var t = clock.getElapsedTime();
+        controls.update(t);
+        oculuscontrol.update(t);
+            
+        effect.render(scene, camera);
+    }
+
+</script>
+</body>
+</html>
