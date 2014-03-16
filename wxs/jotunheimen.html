@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<title>three.js - Jotunheimen</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+<style>
+    body { margin: 0; overflow: hidden; }
+</style>
+</head>
+<body>
+<div id="webgl"></div>
+<script src="../lib/three.min.js"></script>
+<script src="../lib/TrackballControls.js"></script> 
+<script src="../lib/WcsTerrainLoader.js"></script> 
+<script src="topo2.layers.js"></script> 
+<script>
+
+    var width  = window.innerWidth,
+        height = window.innerHeight,
+        bbox   = '432000,6790000,492000,6850000',
+        wcsUrl = 'http://openwms.statkart.no/skwms1/wcs.dtm?SERVICE=WCS&VERSION=1.0.0&REQUEST=GetCoverage&FORMAT=XYZ&COVERAGE=land_utm33_10m&CRS=EPSG:32632&BBOX=' + bbox + '&WIDTH=200&HEIGHT=200',
+        wmsUrl = 'http://openwms.statkart.no/skwms1/wms.topo2?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&CRS=EPSG:32632&BBOX=' + bbox + '&WIDTH=2048&HEIGHT=2048&LAYERS=' + layers + '&FORMAT=image/png';        
+
+    var scene = new THREE.Scene();
+    scene.add(new THREE.AmbientLight(0xeeeeee));
+
+    var camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+    camera.position.set(0, -30, 30);
+
+    var renderer = new THREE.WebGLRenderer();
+    renderer.setSize(width, height);
+
+    var terrainLoader = new THREE.WcsTerrainLoader();
+    terrainLoader.load(wcsUrl, function(data) {
+
+        var geometry = new THREE.PlaneGeometry(60, 60, 199, 199);
+
+        for (var i = 0, l = geometry.vertices.length; i < l; i++) {
+            geometry.vertices[i].z = data[i] / 500;
+        }
+
+        var material = new THREE.MeshPhongMaterial({
+            map: THREE.ImageUtils.loadTexture(wmsUrl)
+        });
+
+        var plane = new THREE.Mesh(geometry, material);
+        scene.add(plane);
+
+    });
+
+    var controls = new THREE.TrackballControls(camera); 
+
+    document.getElementById('webgl').appendChild(renderer.domElement);
+
+    render();
+
+    function render() {
+        controls.update();    
+        requestAnimationFrame(render);
+        renderer.render(scene, camera);
+    }
+
+</script>
+</body>
+</html>
